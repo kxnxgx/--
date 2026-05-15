@@ -1,0 +1,76 @@
+{
+    "paths": {
+        "base_dir": "c:\\分析",
+        "output_dir": "c:\\分析\\v3",
+        "db_filename": "fjallraven_md_v3.db",
+        "backup_dir": "c:\\分析\\v3\\backup",
+        "backup_keep_days": 7
+    },
+    "csv_patterns": {
+        "sales": "*売上*.csv",
+        "stock": "*在庫*.csv",
+        "master": "*マスタ*.csv",
+        "prev_year_keyword": "2025"
+    },
+    "column_mapping": {
+        "sales": {
+            "reg_idx": 0,
+            "store_idx": 2,
+            "key_idx": 3,
+            "size_idx": 9,
+            "price_idx": 14,
+            "inbound_idx": 20,
+            "age_idx": 21,
+            "member_idx": 24
+        },
+        "master": {
+            "key_idx": 0,
+            "name_idx": 2,
+            "brand_idx": 6,
+            "cost_idx": 11,
+            "cat_l_idx": 12,
+            "cat_m_idx": 13,
+            "cat_s_idx": 14,
+            "color_idx": 20
+        },
+        "stock": {
+            "key_idx": 2
+        },
+        "date_keywords": ["日", "日付", "年月日", "Date"],
+        "stock_val_keywords": ["在庫", "数量", "残数", "現在"],
+        "stock_recv_keywords": ["受入", "入荷", "仕入"],
+        "inbound_keywords": ["外国", "インバウンド", "INBOUND"]
+    },
+    "analysis": {
+        "target_brand": "FRV",
+        "wos_period_days": 14,
+        "abc_a_threshold": 0.80,
+        "abc_b_threshold": 0.90,
+        "xyz_x_threshold": 0.3,
+        "xyz_y_threshold": 0.8,
+        "wos_red_below": 2,
+        "wos_yellow_above": 20,
+        "detail_max_rows": 5000,
+        "kanken_keywords": ["Kanken", "カンケン", "kanken"]
+    },
+    "stores": {
+        "closed": ["心斎橋パルコ"],
+        "all": [
+            "FJALLRAVEN by 3NITY 心斎橋パルコ",
+            "FJALLRAVEN by 3NITY ルクア大阪",
+            "FJALLRAVEN by 3NITY 京王新宿",
+            "FJALLRAVEN by 3NITY玉川高島屋S・C",
+            "6142",
+            "FJALLRAVEN STORE 名古屋ファッションワン",
+            "FJALLRAVEN by 3NITY TOKYO",
+            "FJALLRAVEN by 3NITY SAPPORO HUTTE",
+            "FJALLRAVEN by 3NITY POPUP",
+            "FJALLRAVEN POP-UP"
+        ]
+    },
+    "csv_validation": {
+        "min_sales_columns": 20,
+        "min_master_columns": 15,
+        "min_stock_columns": 10
+    }
+}
