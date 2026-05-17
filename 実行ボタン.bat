@@ -1,17 +1,32 @@
 @echo off
 cd /d %~dp0
 
-echo ========================================
-echo FJALLRAVEN MD Analysis Tool V3
-echo ========================================
+echo ===================================================
+echo   MD分析ツール V4.0 (マルチブランド対応) 起動中...
+echo ===================================================
 echo.
 
 python v3\main.py
 
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo ===================================================
+    echo  【エラーが発生しました】
+    echo   処理が正常に完了しませんでした。
+    echo   上記の赤字や英語のエラー内容（Traceback）を確認するか、
+    echo   「v3\process_log.txt」ファイルをご確認ください。
+    echo ===================================================
+    echo.
+    pause
+    exit /b %ERRORLEVEL%
+)
+
 echo.
-echo ========================================
-echo Process Finished.
-echo Please check "MD Analysis Report v3" Excel file in the "v3" folder.
-echo Logs are saved in "v3\process_log.txt".
-echo ========================================
+echo ===================================================
+echo  【処理が正常に完了しました！】
+echo   分析レポートおよびAI用データが正常に生成されました。
+echo   「v3/各ブランド/」フォルダ内のExcelレポートをご確認ください。
+echo   実行ログは「v3\process_log.txt」に保存されています。
+echo ===================================================
+echo.
 pause

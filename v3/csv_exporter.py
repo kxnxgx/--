@@ -7,10 +7,11 @@ import pandas as pd
 from utils import get_config, log
 
 
-def export_csvs(df_merged, abc_df_raw, sell_through_df, yoy_df, kpi, cols):
-    """NotebookLM向けCSVを v3/notebook_data/ に出力する"""
+def export_csvs(df_merged, abc_df_raw, sell_through_df, yoy_df, kpi, cols, brand_output_dir=None):
+    """NotebookLM向けCSVを サブフォルダ内の notebook_data/ に出力する"""
     cfg = get_config()
-    output_dir = os.path.join(cfg["paths"]["output_dir"], "notebook_data")
+    base_dir = brand_output_dir or cfg["paths"]["output_dir"]
+    output_dir = os.path.join(base_dir, "notebook_data")
     os.makedirs(output_dir, exist_ok=True)
 
     _export_monthly_summary(df_merged, yoy_df, cols, output_dir)

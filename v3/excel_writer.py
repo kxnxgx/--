@@ -513,3 +513,92 @@ def write_yoy_sheet(writer, yoy_df):
             line.height = 15; line.width = 25
             ws.add_chart(line, f"D{chart_data_start}")
 
+
+def write_stock_health_sheet(writer, trend):
+    """
+    在庫ヘルス推移シートを追加し、過去の在庫数量・金額推移テーブルとグラフを描画する
+    """
+    if trend is None or trend.empty:
+        # 初回実行時などの空状態へのフォールバック
+        ws = writer.book.create_sheet(title="在庫ヘルス推移")
+        ws["A1"] = "在庫ヘルス推移レポート (過去8週間)"
+        ws["A1"].font = ws["A1"].font.copy(bold=True, size=14)
+        ws["A3"] = "【お知らせ】過去の在庫履歴がまだデータベースに十分に蓄積されていません。"
+        ws["A4"] = "このツールを実行するたびに、その日の在庫状況が自動的にDBにスナップショット保存されます。"
+        ws["A5"] = "次回（翌日や来週など）以降の実行から、このシートに時系列グラフが自動描画されます。"
+        return
+
+    # ピボットテーブルの作成（横：実行日、縦：中分類）
+    pivot_qty = trend.pivot_table(index="中分類", columns="実行日", values="在庫数量合計", aggfunc="sum").fillna(0)
+    pivot_qty.columns.name = None
+    pivot_qty = pivot_qty.reset_index()
+
+    pivot_amt = trend.pivot_table(index="中分類", columns="実行日", values="在庫金額合計", aggfunc="sum").fillna(0)
+    pivot_amt.columns.name = None
+    pivot_amt = pivot_amt.reset_index()
+
+    # Excelへの書き出し
+    pivot_qty.to_excel(writer, sheet_name="在庫ヘルス推移", startrow=4, index=False)
+    
+    start_row_amt = len(pivot_qty) + 8
+    ws = writer.sheets["在庫ヘルス推移"]
+    ws["A1"] = "在庫ヘルス推移レポート (過去8週間)"
+    ws["A1"].font = ws["A1"].font.copy(bold=True, size=14)
+    ws["A2"] = "※このシートはSQLite DBに蓄積された在庫スナップショット履歴から自動的に生成されます。"
+    
+    ws.cell(row=4, column=1, value="中分類（在庫数量）")
+    ws.cell(row=4, column=1).font = ws.cell(row=4, column=1).font.copy(bold=True)
+    
+    # 金額のテーブル書き出し
+    ws.cell(row=start_row_amt - 1, column=1, value="中分類（在庫金額：原価）")
+    ws.cell(row=start_row_amt - 1, column=1).font = ws.cell(row=start_row_amt - 1, column=1).font.copy(bold=True)
+    pivot_amt.to_excel(writer, sheet_name="在庫ヘルス推移", startrow=start_row_amt, index=False)
+
+    # 3桁区切りのフォーマットを適用（金額テーブル）
+    max_col = ws.max_column
+    for col in range(2, max_col + 1):
+        for row in range(start_row_amt + 1, start_row_amt + len(pivot_amt) + 1):
+            ws.cell(row=row, column=col).number_format = "¥#,##0"
+
+    # --- 1. 在庫数量推移 折れ線グラフ ---
+    from openpyxl.chart import LineChart, Reference as ChartRef
+    line = LineChart()
+    line.title = "週次 在庫数量推移（中分類別）"
+    line.style = 10
+    line.y_axis.title = "在庫数量"
+    line.x_axis.title = "実行日"
+    
+    # min_col=1 から開始し、titles_from_data=True でA列の中分類名を系列名にする
+    data_qty = ChartRef(ws, min_col=1, min_row=5, max_col=max_col, max_row=4 + len(pivot_qty))
+    line.add_data(data_qty, titles_from_data=True, from_rows=True)
+    
+    # カテゴリー軸（x軸）: 4行目のB列以降（実行日の日付ヘッダー）
+    cats = ChartRef(ws, min_col=2, min_row=4, max_col=max_col, max_row=4)
+    line.set_categories(cats)
+        
+    line.height = 12; line.width = 20
+    ws.add_chart(line, f"B{len(pivot_qty) + 6}")
+
+    # --- 2. 在庫金額推移 積み上げ棒グラフ (BarChart) ---
+    from openpyxl.chart import BarChart
+    bar = BarChart()
+    bar.type = "col"
+    bar.style = 11
+    bar.grouping = "stacked"
+    bar.overlap = 100
+    bar.title = "週次 在庫金額推移（中分類別・原価）"
+    bar.y_axis.title = "在庫金額"
+    bar.x_axis.title = "実行日"
+    bar.y_axis.numFmt = "¥#,##0"
+    
+    # min_col=1 から開始し、titles_from_data=True でA列の中分類名を系列名にする
+    data_amt = ChartRef(ws, min_col=1, min_row=start_row_amt + 1, max_col=max_col, max_row=start_row_amt + len(pivot_amt))
+    bar.add_data(data_amt, titles_from_data=True, from_rows=True)
+    bar.set_categories(cats)
+    
+    bar.height = 12; bar.width = 20
+    ws.add_chart(bar, f"B{start_row_amt + len(pivot_amt) + 2}")
+
+    auto_fit_columns(ws)
+
+

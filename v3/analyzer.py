@@ -177,7 +177,7 @@ def calc_kpi(df_merged, cols):
     }
 
 
-def calc_yoy(df_current, df_prev, df_master, cols):
+def calc_yoy(df_current, df_prev, df_master, cols, brand=None):
     """前年同月比を月別×中分類で計算"""
     col_date  = cols["date"]
     col_cat_m = cols["m_cat_m"]
@@ -197,11 +197,14 @@ def calc_yoy(df_current, df_prev, df_master, cols):
     ).reset_index().rename(columns={col_cat_m: "中分類"})
 
     # --- 前年 ---
+    cfg = get_config()
+    si = cfg["column_mapping"]["sales"]
     prev_cols = df_prev.columns.tolist()
+    
+    prev_reg_col   = prev_cols[si["reg_idx"]]
+    prev_key_col   = prev_cols[si["key_idx"]]
+    prev_price_col = prev_cols[si["price_idx"]] if len(prev_cols) > si["price_idx"] else None
     prev_date_col  = next((c for c in prev_cols if any(x in c for x in ["日","日付","年月日","Date"])), None)
-    prev_price_col = prev_cols[14] if len(prev_cols) > 14 else None
-    prev_reg_col   = prev_cols[0]
-    prev_key_col   = prev_cols[3] if len(prev_cols) > 3 else None
 
     if not prev_date_col or not prev_key_col:
         log("  警告: 前年データに日付列または品番列が見つかりません。前年比スキップ。")
@@ -214,15 +217,16 @@ def calc_yoy(df_current, df_prev, df_master, cols):
                                  .str.replace("¥","").str.replace(",","").str.strip())
         df_py[prev_price_col] = pd.to_numeric(df_py[prev_price_col], errors="coerce").fillna(0)
 
+    # 年月を「今年に投影した月」にする
     df_py["年月"] = df_py[prev_date_col].apply(
         lambda d: f"{d.year+1}-{d.month:02d}" if pd.notna(d) else None
     )
 
-    # 前年の品番(3rd Item No)とマスタ(商品コード)を結合して中分類を取得
+    # 前年の品番とマスタを結合して中分類を取得
     df_py[prev_key_col] = df_py[prev_key_col].astype(str)
     
     col_brand = cols["m_brand"]
-    target_brand = get_config()["analysis"]["target_brand"]
+    target_brand = brand or cfg["analysis"]["target_brand"]
     df_master_map = df_master[[col_m_key, col_cat_m, col_brand]].copy()
     df_master_map[col_m_key] = df_master_map[col_m_key].astype(str)
 
