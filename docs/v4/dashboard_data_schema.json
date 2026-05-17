@@ -1,0 +1,188 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "V4 MD分析ツール バックエンド→フロントエンド データ仕様 (JSONスキーマ)",
+  "version": "4.0.0",
+  "generated_at": "ISO8601形式の実行日時を入れる例: 2026-05-19T09:00:00+09:00",
+
+  "store_kpi_dashboard": {
+    "description": "店舗用KPIボードに必要なデータ",
+    "meta": {
+      "store_code": "店舗コード (例: S001)",
+      "store_name": "店舗名 (例: ウイングモール インデックス大阪店)",
+      "brand": "ブランドコード (例: FRV)",
+      "period_start": "集計開始日 YYYY-MM-DD",
+      "period_end": "集計終了日 YYYY-MM-DD"
+    },
+    "kpi_cards": {
+      "description": "上段 主要KPIカード5枚",
+      "sales": {
+        "current": "当週売上金額 (円, integer)",
+        "prev": "前週売上金額 (円, integer)",
+        "change_pct": "前週比 (%, float, 例: 3.36)"
+      },
+      "customer_count": {
+        "current": "当週客数 (人, integer)",
+        "prev": "前週客数 (人, integer)",
+        "change_pct": "前週比 (%, float)"
+      },
+      "avg_spend": {
+        "current": "客単価 (円, integer)",
+        "prev": "前週客単価 (円, integer)",
+        "change_pct": "前週比 (%, float)"
+      },
+      "avg_unit_price": {
+        "current": "1品単価 (円, integer)",
+        "prev": "前週1品単価 (円, integer)",
+        "change_pct": "前週比 (%, float)"
+      },
+      "units_per_customer": {
+        "current": "1客個数 (個, float, 小数第1位)",
+        "prev": "前週1客個数 (個, float)",
+        "change_pct": "前週比 (%, float)"
+      }
+    },
+    "attribute_kpi": {
+      "description": "中段 属性KPIカード2枚",
+      "inbound_ratio": {
+        "current_pct": "インバウンド比率 (%, float)",
+        "prev_pct": "前週インバウンド比率 (%, float)",
+        "change_pt": "前週比pt差 (float, 例: +2.1)"
+      },
+      "member_ratio": {
+        "current_pct": "会員比率 (%, float)",
+        "prev_pct": "前週会員比率 (%, float)",
+        "change_pt": "前週比pt差 (float)"
+      }
+    },
+    "wos_alert": {
+      "description": "中段右 WOSアラートカード",
+      "danger_count": "欠品危険SKU件数 (integer, WOS < wos_red_below)",
+      "danger_items": [
+        {
+          "sku_code": "商品コード",
+          "item_name": "商品名",
+          "wos": "WOS値 (float)",
+          "stock_qty": "在庫数 (integer)"
+        }
+      ],
+      "excess_count": "過剰在庫SKU件数 (integer, WOS > wos_yellow_above)"
+    },
+    "kanken_stock": {
+      "description": "下段 Kanken在庫ステータス",
+      "items": [
+        {
+          "color_code": "カラーコード",
+          "color_name": "カラー名 (日本語)",
+          "stock_qty": "在庫数 (integer)",
+          "is_stockout": "在庫0フラグ (boolean)"
+        }
+      ]
+    }
+  },
+
+  "md_dashboard": {
+    "description": "MD本部用ダッシュボードに必要なデータ",
+    "meta": {
+      "brand": "ブランドコード (例: FRV)",
+      "store_count": "対象店舗数 (integer)",
+      "period_start": "集計開始日 YYYY-MM-DD",
+      "period_end": "集計終了日 YYYY-MM-DD"
+    },
+    "summary": {
+      "description": "タブ① 全体サマリー",
+      "total_kpi": "store_kpi_dashboard.kpi_cards と同構造（全店合計）",
+      "category_mix": [
+        {
+          "category": "中分類名",
+          "sales_pct": "売上構成比 (%, float)",
+          "stock_pct": "在庫構成比 (%, float)"
+        }
+      ],
+      "yoy": [
+        {
+          "month": "月 (YYYY-MM)",
+          "category": "中分類名",
+          "current_year_sales": "今年売上 (円)",
+          "prev_year_sales": "前年売上 (円)",
+          "yoy_pct": "前年同月比 (%, float)"
+        }
+      ]
+    },
+    "stock_health_trend": {
+      "description": "タブ② 在庫ヘルス推移 (DB stock_history から生成)",
+      "wos_trend": [
+        {
+          "date": "スナップショット日 (YYYY-MM-DD)",
+          "category": "中分類名",
+          "wos": "WOS値 (float)"
+        }
+      ],
+      "stock_value_trend": [
+        {
+          "date": "スナップショット日 (YYYY-MM-DD)",
+          "stock_value": "在庫金額 (円, integer)"
+        }
+      ],
+      "inventory_turnover_monthly": [
+        {
+          "month": "月 (YYYY-MM)",
+          "turnover_rate": "在庫回転率 (float, 販売数/平均在庫数)"
+        }
+      ],
+      "config_thresholds": {
+        "wos_red_below": "config.jsonの値 (float)",
+        "wos_yellow_above": "config.jsonの値 (float)"
+      }
+    },
+    "abc_xyz": {
+      "description": "タブ③ ABC/XYZ + 販売機会損失",
+      "matrix": [
+        {
+          "sku_code": "商品コード",
+          "item_name": "商品名",
+          "abc_rank": "A/B/C",
+          "xyz_rank": "X/Y/Z",
+          "sales_amount": "売上金額 (円)",
+          "cv": "変動係数 (float)"
+        }
+      ],
+      "opportunity_loss": [
+        {
+          "sku_code": "商品コード",
+          "item_name": "商品名",
+          "stockout_size": "欠品サイズ",
+          "estimated_loss_days": "欠品推定日数 (integer)",
+          "estimated_loss_amount": "推定機会損失額 (円, integer)"
+        }
+      ]
+    },
+    "order_alert": {
+      "description": "タブ④ 発注アラート (V4.1実装予定)",
+      "_note": "V4.1で forecaster.py を追加後に仕様確定",
+      "forecast_items": [
+        {
+          "sku_code": "商品コード",
+          "item_name": "商品名",
+          "forecast_qty_next_month": "来月需要予測数 (integer)",
+          "recommended_order_qty": "推奨発注数 (integer)",
+          "safety_stock": "安全在庫数 (integer)",
+          "current_stock": "現在庫数 (integer)",
+          "risk_level": "欠品リスクレベル HIGH/MEDIUM/LOW"
+        }
+      ],
+      "markdown_simulation": [
+        {
+          "sku_code": "商品コード",
+          "item_name": "商品名",
+          "current_price": "現行売価 (円)",
+          "discount_pct": "値下げ率 (%, 10/20/30)",
+          "discounted_price": "値下げ後売価 (円)",
+          "estimated_sales_increase": "推定販売数増加 (integer)",
+          "estimated_revenue_change": "推定売上変化 (円)",
+          "estimated_profit_change": "推定粗利変化 (円)",
+          "recommendation": "推奨判定: 値下げ有効 / 粗利悪化"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>店舗運営 主要KPIボード</title>
+<style>
+:root {
+  --color-bg: #fafaf8;
+  --color-surface: #ffffff;
+  --color-border: #e5e3de;
+  --color-text: #1a1917;
+  --color-text-muted: #6b6a66;
+  --color-text-faint: #b0afaa;
+  --color-accent: #d97706;
+  --color-accent-bg: #fef3c7;
+  --color-success: #16a34a;
+  --color-success-bg: #dcfce7;
+  --color-danger: #dc2626;
+  --color-danger-bg: #fee2e2;
+  --color-warning: #ca8a04;
+  --color-warning-bg: #fef9c3;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
+  --font: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+/* ヘッダー */
+.header {
+  background: var(--color-accent);
+  color: white;
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.header h1 { font-size: 20px; font-weight: 700; white-space: nowrap; }
+.header .store-name { font-size: 14px; opacity: 0.9; }
+.header .period {
+  margin-left: auto;
+  font-size: 13px;
+  background: rgba(255,255,255,0.2);
+  padding: 6px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* KPIグリッド */
+.kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 12px; }
+.kpi-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+
+/* カード共通 */
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--color-border);
+}
+.card-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin-bottom: 6px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  padding: 4px 0;
+  background: #f5f4f0;
+  border-radius: 6px;
+}
+.card-value {
+  font-size: 26px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--color-text);
+  line-height: 1.2;
+  margin: 8px 0 6px;
+  letter-spacing: -0.01em;
+}
+.card-value .unit { font-size: 14px; font-weight: 500; color: var(--color-text-muted); margin-left: 2px; }
+.card-change {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.card-prev {
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-text-faint);
+}
+.up { color: var(--color-success); }
+.down { color: var(--color-danger); }
+.up-bg { background: var(--color-success-bg); color: var(--color-success); }
+.down-bg { background: var(--color-danger-bg); color: var(--color-danger); }
+
+/* 矢印アイコン */
+.arrow { font-size: 18px; line-height: 1; }
+
+/* WOSアラートカード */
+.wos-card { display: flex; flex-direction: column; gap: 10px; }
+.wos-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.wos-badge .count { font-size: 28px; font-weight: 800; }
+.wos-badge .label { font-size: 12px; line-height: 1.4; }
+.wos-badge .items { font-size: 11px; margin-top: 2px; color: inherit; opacity: 0.75; }
+.wos-danger { background: var(--color-danger-bg); color: var(--color-danger); }
+.wos-warning { background: var(--color-warning-bg); color: var(--color-warning); }
+
+/* Kankenグリッド */
+.kanken-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.kanken-chip {
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+  border: 1px solid transparent;
+}
+.kanken-chip.ok {
+  background: #f3f2ee;
+  border-color: #e5e3de;
+}
+.kanken-chip.stockout {
+  background: var(--color-danger-bg);
+  border-color: #fca5a5;
+}
+.kanken-chip .color-name { font-size: 11px; font-weight: 600; margin-bottom: 4px; color: var(--color-text-muted); }
+.kanken-chip.stockout .color-name { color: var(--color-danger); }
+.kanken-chip .stock-num { font-size: 20px; font-weight: 800; color: var(--color-text); }
+.kanken-chip.stockout .stock-num { color: var(--color-danger); }
+.kanken-chip .stock-label { font-size: 10px; color: var(--color-text-faint); }
+.kanken-chip.stockout .stock-label { color: var(--color-danger); opacity: 0.7; }
+.kanken-chip .warning-icon { font-size: 14px; margin-top: 2px; }
+
+.section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .kpi-grid-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .kpi-grid-3 { grid-template-columns: 1fr; }
+  .card-value { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header class="header">
+  <h1>店舗運営 主要KPIボード</h1>
+  <span class="store-name">ウイングモール インデックス大阪店</span>
+  <span class="period">📅 2026/05/11 〜 05/17</span>
+</header>
+
+<!-- 主要KPI 5カード -->
+<div class="kpi-grid">
+  <div class="card">
+    <div class="card-label">売上</div>
+    <div class="card-value">4,925,640<span class="unit">円</span></div>
+    <div class="card-change up"><span class="arrow">↑</span> +3.36%</div>
+    <div class="card-prev">先週 4,765,430円</div>
+  </div>
+  <div class="card">
+    <div class="card-label">客数</div>
+    <div class="card-value">1,565<span class="unit">人</span></div>
+    <div class="card-change up"><span class="arrow">↑</span> +4.54%</div>
+    <div class="card-prev">先週 1,497人</div>
+  </div>
+  <div class="card">
+    <div class="card-label">客単価</div>
+    <div class="card-value">3,147<span class="unit">円</span></div>
+    <div class="card-change down"><span class="arrow">↓</span> -2.99%</div>
+    <div class="card-prev">先週 3,183円</div>
+  </div>
+  <div class="card">
+    <div class="card-label">1品単価</div>
+    <div class="card-value">442<span class="unit">円</span></div>
+    <div class="card-change down"><span class="arrow">↓</span> -2.99%</div>
+    <div class="card-prev">先週 413円</div>
+  </div>
+  <div class="card">
+    <div class="card-label">1客個数</div>
+    <div class="card-value">7.5<span class="unit">個</span></div>
+    <div class="card-change up"><span class="arrow">↑</span> +11.94%</div>
+    <div class="card-prev">先週 6.7個</div>
+  </div>
+</div>
+
+<!-- 中段: 属性KPI + WOSアラート -->
+<div class="kpi-grid-3">
+  <div class="card">
+    <div class="card-label">インバウンド比率</div>
+    <div class="card-value">18.4<span class="unit">%</span></div>
+    <div class="card-change up"><span class="arrow">↑</span> +2.1pt</div>
+    <div class="card-prev">先週 16.3%</div>
+  </div>
+  <div class="card">
+    <div class="card-label">会員比率</div>
+    <div class="card-value">54.2<span class="unit">%</span></div>
+    <div class="card-change down"><span class="arrow">↓</span> -1.3pt</div>
+    <div class="card-prev">先週 55.5%</div>
+  </div>
+  <div class="card">
+    <div class="card-label">WOS アラート</div>
+    <div class="wos-card">
+      <div class="wos-badge wos-danger">
+        <div class="count">7</div>
+        <div>
+          <div class="label">⚠ 欠品危険 (WOS &lt; 2週)</div>
+          <div class="items">Kanken 16L / Totepack No.1 / 他5件</div>
+        </div>
+      </div>
+      <div class="wos-badge wos-warning">
+        <div class="count">12</div>
+        <div>
+          <div class="label">📦 過剰在庫 (WOS &gt; 20週)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 下段: Kanken在庫ステータス -->
+<div class="card">
+  <div class="section-title">Kanken 在庫ステータス（カラー別）</div>
+  <div class="kanken-grid">
+    <div class="kanken-chip ok"><div class="color-name">Navy</div><div class="stock-num">23</div><div class="stock-label">在庫</div></div>
+    <div class="kanken-chip ok"><div class="color-name">Black</div><div class="stock-num">18</div><div class="stock-label">在庫</div></div>
+    <div class="kanken-chip stockout"><div class="color-name">Ox Red</div><div class="stock-num">0</div><div class="stock-label">欠品</div><div class="warning-icon">⚠</div></div>
+    <div class="kanken-chip ok"><div class="color-name">Royal Blue</div><div class="stock-num">9</div><div class="stock-label">在庫</div></div>
+    <div class="kanken-chip stockout"><div class="color-name">Frost Green</div><div class="stock-num">0</div><div class="stock-label">欠品</div><div class="warning-icon">⚠</div></div>
+    <div class="kanken-chip ok"><div class="color-name">Warm Sand</div><div class="stock-num">14</div><div class="stock-label">在庫</div></div>
+    <div class="kanken-chip ok"><div class="color-name">Deep Red</div><div class="stock-num">6</div><div class="stock-label">在庫</div></div>
+    <div class="kanken-chip stockout"><div class="color-name">Graphite</div><div class="stock-num">0</div><div class="stock-label">欠品</div><div class="warning-icon">⚠</div></div>
+    <div class="kanken-chip ok"><div class="color-name">Peach Sand</div><div class="stock-num">11</div><div class="stock-label">在庫</div></div>
+    <div class="kanken-chip ok"><div class="color-name">Flint</div><div class="stock-num">7</div><div class="stock-label">在庫</div></div>
+    <div class="kanken-chip ok"><div class="color-name">Plum</div><div class="stock-num">4</div><div class="stock-label">在庫</div></div>
+    <div class="kanken-chip ok"><div class="color-name">Maple</div><div class="stock-num">3</div><div class="stock-label">在庫</div></div>
+  </div>
+</div>
+
+</body>
+</html>
