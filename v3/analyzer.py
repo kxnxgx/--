@@ -246,3 +246,64 @@ def calc_yoy(df_current, df_prev, df_master, cols, brand=None):
     yoy["売上金額前年比"] = yoy.apply(
         lambda r: r["今年売上金額"] / r["前年売上金額"] if r["前年売上金額"] > 0 else None, axis=1)
     return yoy
+
+
+def calc_opportunity_loss(df_merged, abc_df, cols):
+    """
+    販売機会損失額を簡易計算する
+    対象: A/Bランクかつ現在庫0のSKU
+    推定機会損失額 = (過去14日の販売数 / 14) * 単価 * 推定欠品日数(14日)
+    """
+    col_date = cols["date"]
+    col_key = cols["s_key"]
+    col_name = cols.get("m_name", "商品名")
+    col_reg = cols["s_reg"]
+    col_stk = cols["stock_val"]
+    
+    if not col_date or df_merged[col_date].isna().all():
+        return pd.DataFrame()
+
+    # ABCランクがAかBのSKUを抽出
+    target_abc = abc_df[abc_df["ABCランク"].isin(["A", "B"])].copy()
+    
+    # 現在庫が0以下のSKUを特定
+    current_stock = df_merged.groupby(col_key)[col_stk].last().reset_index()
+    stockout_keys = current_stock[current_stock[col_stk] <= 0][col_key]
+    
+    target_keys = set(target_abc[col_key]).intersection(set(stockout_keys))
+    if not target_keys:
+        return pd.DataFrame()
+        
+    # 過去14日間の売上数を計算
+    max_date = df_merged[col_date].max()
+    cutoff_date = max_date - timedelta(days=14)
+    df_recent = df_merged[(df_merged[col_date] >= cutoff_date) & (df_merged[col_key].isin(target_keys))]
+    
+    recent_sales = df_recent.groupby(col_key)[col_reg].count().reset_index(name="過去14日販売数")
+    
+    # 結果の結合
+    # df_mergedにはm_nameが存在しないか異なる場合があるため、abc_df(マスタ情報を含む)から取得
+    col_name_actual = col_name if col_name in target_abc.columns else col_key
+    loss_df = pd.merge(
+        target_abc[[col_key, col_name_actual, "売価", "ABCランク"]],
+        recent_sales,
+        on=col_key, how="inner"
+    )
+    
+    # 推定機会損失額 = (過去14日販売数 / 14) * 14 * 売価 = 過去14日販売数 * 売価
+    loss_df["推定欠品日数"] = 14
+    loss_df["推定機会損失額"] = loss_df["過去14日販売数"] * loss_df["売価"]
+    
+    # 金額でソートし上位20件を抽出
+    loss_df = loss_df.sort_values("推定機会損失額", ascending=False).head(20)
+    
+    # 出力用にカラム名を日本語にリネーム
+    loss_df = loss_df.rename(columns={col_key: "商品コード", col_name_actual: "商品名"})
+    
+    # カラム整理
+    if "商品名" not in loss_df.columns:
+        loss_df["商品名"] = loss_df["商品コード"]
+        
+    result = loss_df[["商品コード", "商品名", "ABCランク", "過去14日販売数", "推定欠品日数", "推定機会損失額"]]
+    return result
+

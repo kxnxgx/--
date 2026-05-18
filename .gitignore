@@ -20,3 +20,11 @@ v3/process_log.txt
 # Ignore local system files
 .DS_Store
 Thumbs.db
+
+# V4 / API Server outputs
+dashboard_data*.json
+v4/reports/
+v4/logs/
+v4/tmp/
+v4/notebook_data/
+backups/

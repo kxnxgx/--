@@ -19,9 +19,10 @@ from utils import (
     backup_db, find_file_by_keyword, load_csv, get_excel_path
 )
 from data_loader import load_and_merge_data
-from analyzer import calc_wos, calc_abc_xyz, calc_sell_through, calc_kpi, calc_yoy
+from analyzer import calc_wos, calc_abc_xyz, calc_sell_through, calc_kpi, calc_yoy, calc_opportunity_loss
 from db_manager import save_to_db, save_prev_year_to_db
 from csv_exporter import export_csvs
+from dashboard_service import generate_dashboard_json
 
 
 def main():
@@ -97,6 +98,7 @@ def main():
             sell_through_df = calc_sell_through(df_merged, recv_by_item_raw, cols)
             kpi = calc_kpi(df_merged, cols)
             yoy_df = calc_yoy(df_merged, df_prev, df_master_raw, cols, brand) if df_prev is not None else None
+            opp_loss_df = calc_opportunity_loss(df_merged, abc_df_raw, cols)
             log_step_end(f"分析計算 ({brand})")
 
             # --- Step 4: DB保存 ---
@@ -143,6 +145,11 @@ def main():
             log_step_start(f"CSV出力 ({brand})")
             export_csvs(df_merged, abc_df_raw, sell_through_df, yoy_df, kpi, cols, brand_output_dir)
             log_step_end(f"CSV出力 ({brand})")
+
+            # --- Step 7: ダッシュボード用JSON出力 (V4) ---
+            log_step_start(f"JSON出力 ({brand})")
+            generate_dashboard_json(brand, df_merged, abc_df_raw, kpi, opp_loss_df, cols)
+            log_step_end(f"JSON出力 ({brand})")
 
             log(f"ブランド【 {brand} 】の処理完了: {os.path.basename(output_path)}")
 

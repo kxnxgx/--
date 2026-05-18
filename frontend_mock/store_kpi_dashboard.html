@@ -182,7 +182,9 @@ body {
 <!-- ヘッダー -->
 <header class="header">
   <h1>店舗運営 主要KPIボード</h1>
-  <span class="store-name">ウイングモール インデックス大阪店</span>
+  <select id="storeSelect" style="padding: 6px 12px; font-size: 14px; border-radius: 4px; border: none; margin-left: 10px; background: white; color: var(--color-text);">
+    <option value="">(モック店舗)</option>
+  </select>
   <span class="period">📅 2026/05/11 〜 05/17</span>
 </header>
 
@@ -190,31 +192,31 @@ body {
 <div class="kpi-grid">
   <div class="card">
     <div class="card-label">売上</div>
-    <div class="card-value">4,925,640<span class="unit">円</span></div>
+    <div class="card-value" id="val-sales">4,925,640<span class="unit">円</span></div>
     <div class="card-change up"><span class="arrow">↑</span> +3.36%</div>
     <div class="card-prev">先週 4,765,430円</div>
   </div>
   <div class="card">
     <div class="card-label">客数</div>
-    <div class="card-value">1,565<span class="unit">人</span></div>
+    <div class="card-value" id="val-customers">1,565<span class="unit">人</span></div>
     <div class="card-change up"><span class="arrow">↑</span> +4.54%</div>
     <div class="card-prev">先週 1,497人</div>
   </div>
   <div class="card">
     <div class="card-label">客単価</div>
-    <div class="card-value">3,147<span class="unit">円</span></div>
+    <div class="card-value" id="val-avg-spend">3,147<span class="unit">円</span></div>
     <div class="card-change down"><span class="arrow">↓</span> -2.99%</div>
     <div class="card-prev">先週 3,183円</div>
   </div>
   <div class="card">
     <div class="card-label">1品単価</div>
-    <div class="card-value">442<span class="unit">円</span></div>
+    <div class="card-value" id="val-item-price">442<span class="unit">円</span></div>
     <div class="card-change down"><span class="arrow">↓</span> -2.99%</div>
     <div class="card-prev">先週 413円</div>
   </div>
   <div class="card">
     <div class="card-label">1客個数</div>
-    <div class="card-value">7.5<span class="unit">個</span></div>
+    <div class="card-value" id="val-items-per-customer">7.5<span class="unit">個</span></div>
     <div class="card-change up"><span class="arrow">↑</span> +11.94%</div>
     <div class="card-prev">先週 6.7個</div>
   </div>
@@ -273,5 +275,52 @@ body {
   </div>
 </div>
 
+<script>
+const USE_MOCK = false;
+
+document.addEventListener("DOMContentLoaded", async () => {
+  if (USE_MOCK) return;
+
+  const storeSelect = document.getElementById("storeSelect");
+  let dashboardData = null;
+
+  try {
+    const res = await fetch("http://localhost:8000/api/dashboard?brand=FRV");
+    if (!res.ok) throw new Error("API Fetch Error");
+    dashboardData = await res.json();
+    
+    const stores = Object.keys(dashboardData.stores || {});
+    if (stores.length > 0) {
+      storeSelect.innerHTML = stores.map(s => `<option value="${s}">${s}</option>`).join("");
+      updateDashboard(stores[0]);
+    } else {
+      storeSelect.innerHTML = `<option value="">店舗データなし</option>`;
+    }
+  } catch (error) {
+    console.error(error);
+    storeSelect.innerHTML = `<option value="">(API未接続: モック表示)</option>`;
+  }
+
+  storeSelect.addEventListener("change", (e) => {
+    updateDashboard(e.target.value);
+  });
+
+  function updateDashboard(storeName) {
+    if (!dashboardData || !dashboardData.stores[storeName]) return;
+    const storeInfo = dashboardData.stores[storeName].store_kpi_dashboard;
+    
+    // 更新
+    document.getElementById("val-sales").innerHTML = `${storeInfo.sales.toLocaleString()}<span class="unit">円</span>`;
+    document.getElementById("val-customers").innerHTML = `${storeInfo.customers.toLocaleString()}<span class="unit">人</span>`;
+    document.getElementById("val-avg-spend").innerHTML = `${storeInfo.avg_spend.toLocaleString()}<span class="unit">円</span>`;
+    
+    // 1品単価の計算 (売上 / (客数 * 1客個数)) などの簡易算出 (0除算回避)
+    const totalItems = storeInfo.customers * storeInfo.items_per_customer;
+    const itemPrice = totalItems > 0 ? Math.round(storeInfo.sales / totalItems) : 0;
+    document.getElementById("val-item-price").innerHTML = `${itemPrice.toLocaleString()}<span class="unit">円</span>`;
+    document.getElementById("val-items-per-customer").innerHTML = `${storeInfo.items_per_customer}<span class="unit">個</span>`;
+  }
+});
+</script>
 </body>
 </html>
