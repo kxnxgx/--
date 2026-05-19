@@ -514,9 +514,9 @@ def write_yoy_sheet(writer, yoy_df):
             ws.add_chart(line, f"D{chart_data_start}")
 
 
-def write_stock_health_sheet(writer, trend):
+def write_stock_health_sheet(writer, trend, df_merged, cols):
     """
-    在庫ヘルス推移シートを追加し、過去の在庫数量・金額推移テーブルとグラフを描画する
+    在庫ヘルス推移シートを追加し、過去の在庫数量・金額・WOS推移テーブルとグラフを描画する
     """
     if trend is None or trend.empty:
         # 初回実行時などの空状態へのフォールバック
@@ -528,6 +528,23 @@ def write_stock_health_sheet(writer, trend):
         ws["A5"] = "次回（翌日や来週など）以降の実行から、このシートに時系列グラフが自動描画されます。"
         return
 
+    # 中分類ごとの最新平均週販数を取得 (df_mergedから)
+    col_cat_m = cols["m_cat_m"]
+    col_key = cols["s_key"]
+    # df_merged内のweekly_avgは品番単位なので、中分類ごとに品番の週販を合計する
+    cat_sales_map = df_merged.drop_duplicates(subset=[col_key]).groupby(col_cat_m)["weekly_avg"].sum()
+    
+    # trend(中分類, 実行日) に対して WOS を計算して列を追加
+    def calc_row_wos(row):
+        cat = row["中分類"]
+        qty = row["在庫数量合計"]
+        weekly_sales = cat_sales_map.get(cat, 0.01)
+        if weekly_sales <= 0.01:
+            return 99.9  # 週販がほぼない場合は安全上限値
+        return round(qty / weekly_sales, 1)
+
+    trend["WOS"] = trend.apply(calc_row_wos, axis=1)
+
     # ピボットテーブルの作成（横：実行日、縦：中分類）
     pivot_qty = trend.pivot_table(index="中分類", columns="実行日", values="在庫数量合計", aggfunc="sum").fillna(0)
     pivot_qty.columns.name = None
@@ -537,10 +554,19 @@ def write_stock_health_sheet(writer, trend):
     pivot_amt.columns.name = None
     pivot_amt = pivot_amt.reset_index()
 
+    pivot_wos = trend.pivot_table(index="中分類", columns="実行日", values="WOS", aggfunc="mean").fillna(0)
+    pivot_wos.columns.name = None
+    pivot_wos = pivot_wos.reset_index()
+
     # Excelへの書き出し
     pivot_qty.to_excel(writer, sheet_name="在庫ヘルス推移", startrow=4, index=False)
     
     start_row_amt = len(pivot_qty) + 8
+    pivot_amt.to_excel(writer, sheet_name="在庫ヘルス推移", startrow=start_row_amt, index=False)
+
+    start_row_wos = start_row_amt + len(pivot_amt) + 4
+    pivot_wos.to_excel(writer, sheet_name="在庫ヘルス推移", startrow=start_row_wos, index=False)
+
     ws = writer.sheets["在庫ヘルス推移"]
     ws["A1"] = "在庫ヘルス推移レポート (過去8週間)"
     ws["A1"].font = ws["A1"].font.copy(bold=True, size=14)
@@ -552,34 +578,38 @@ def write_stock_health_sheet(writer, trend):
     # 金額のテーブル書き出し
     ws.cell(row=start_row_amt - 1, column=1, value="中分類（在庫金額：原価）")
     ws.cell(row=start_row_amt - 1, column=1).font = ws.cell(row=start_row_amt - 1, column=1).font.copy(bold=True)
-    pivot_amt.to_excel(writer, sheet_name="在庫ヘルス推移", startrow=start_row_amt, index=False)
 
-    # 3桁区切りのフォーマットを適用（金額テーブル）
+    # WOSのテーブル書き出し
+    ws.cell(row=start_row_wos - 1, column=1, value="中分類（適正在庫WOS：最新週販換算）")
+    ws.cell(row=start_row_wos - 1, column=1).font = ws.cell(row=start_row_wos - 1, column=1).font.copy(bold=True)
+
+    # フォーマットを適用
     max_col = ws.max_column
     for col in range(2, max_col + 1):
         for row in range(start_row_amt + 1, start_row_amt + len(pivot_amt) + 1):
             ws.cell(row=row, column=col).number_format = "¥#,##0"
+        for row in range(start_row_wos + 1, start_row_wos + len(pivot_wos) + 1):
+            ws.cell(row=row, column=col).number_format = "0.0"
+
+    # 共通のカテゴリー軸（x軸）: 4行目のB列以降（実行日の日付ヘッダー）
+    from openpyxl.chart import Reference as ChartRef
+    cats = ChartRef(ws, min_col=2, min_row=4, max_col=max_col, max_row=4)
 
     # --- 1. 在庫数量推移 折れ線グラフ ---
-    from openpyxl.chart import LineChart, Reference as ChartRef
-    line = LineChart()
-    line.title = "週次 在庫数量推移（中分類別）"
-    line.style = 10
-    line.y_axis.title = "在庫数量"
-    line.x_axis.title = "実行日"
+    from openpyxl.chart import LineChart
+    line_qty = LineChart()
+    line_qty.title = "週次 在庫数量推移（中分類別）"
+    line_qty.style = 10
+    line_qty.y_axis.title = "在庫数量"
+    line_qty.x_axis.title = "実行日"
     
-    # min_col=1 から開始し、titles_from_data=True でA列の中分類名を系列名にする
     data_qty = ChartRef(ws, min_col=1, min_row=5, max_col=max_col, max_row=4 + len(pivot_qty))
-    line.add_data(data_qty, titles_from_data=True, from_rows=True)
-    
-    # カテゴリー軸（x軸）: 4行目のB列以降（実行日の日付ヘッダー）
-    cats = ChartRef(ws, min_col=2, min_row=4, max_col=max_col, max_row=4)
-    line.set_categories(cats)
-        
-    line.height = 12; line.width = 20
-    ws.add_chart(line, f"B{len(pivot_qty) + 6}")
+    line_qty.add_data(data_qty, titles_from_data=True, from_rows=True)
+    line_qty.set_categories(cats)
+    line_qty.height = 10; line_qty.width = 16
+    ws.add_chart(line_qty, f"B{len(pivot_qty) + 6}")
 
-    # --- 2. 在庫金額推移 積み上げ棒グラフ (BarChart) ---
+    # --- 2. 在庫金額推移 積み上げ棒グラフ ---
     from openpyxl.chart import BarChart
     bar = BarChart()
     bar.type = "col"
@@ -591,13 +621,24 @@ def write_stock_health_sheet(writer, trend):
     bar.x_axis.title = "実行日"
     bar.y_axis.numFmt = "¥#,##0"
     
-    # min_col=1 から開始し、titles_from_data=True でA列の中分類名を系列名にする
     data_amt = ChartRef(ws, min_col=1, min_row=start_row_amt + 1, max_col=max_col, max_row=start_row_amt + len(pivot_amt))
     bar.add_data(data_amt, titles_from_data=True, from_rows=True)
     bar.set_categories(cats)
-    
-    bar.height = 12; bar.width = 20
+    bar.height = 10; bar.width = 16
     ws.add_chart(bar, f"B{start_row_amt + len(pivot_amt) + 2}")
+
+    # --- 3. 在庫週数(WOS)推移 折れ線グラフ ---
+    line_wos = LineChart()
+    line_wos.title = "週次 在庫週数(WOS)推移（中分類別・最新週販換算）"
+    line_wos.style = 13
+    line_wos.y_axis.title = "在庫週数 (WOS)"
+    line_wos.x_axis.title = "実行日"
+    
+    data_wos = ChartRef(ws, min_col=1, min_row=start_row_wos + 1, max_col=max_col, max_row=start_row_wos + len(pivot_wos))
+    line_wos.add_data(data_wos, titles_from_data=True, from_rows=True)
+    line_wos.set_categories(cats)
+    line_wos.height = 10; line_wos.width = 16
+    ws.add_chart(line_wos, f"B{start_row_wos + len(pivot_wos) + 2}")
 
     auto_fit_columns(ws)
 

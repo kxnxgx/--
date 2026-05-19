@@ -128,7 +128,7 @@ def main():
                     write_summary_sheet(writer, kpi, cols, df_merged)
                     write_category_sheet(writer, df_merged, cols)
                     write_trend_sheet(writer, df_merged, cols)
-                    write_stock_health_sheet(writer, trend_df)
+                    write_stock_health_sheet(writer, trend_df, df_merged, cols)
                     write_abc_xyz_sheet(writer, abc_xyz_output)
                     write_detail_sheet(writer, df_merged, abc_df_raw, sell_through_df, cols)
                     write_store_comparison_sheet(writer, df_merged, df_stock, cols)
