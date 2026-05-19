@@ -213,7 +213,7 @@ def write_detail_sheet(writer, df_merged, abc_df_raw, sell_through_df, cols):
         df_d["消化率"] = df_d[col_key].map(st_map).fillna(0)
 
     # ABCランク付与
-    abc_map = abc_df_raw.set_index(col_key)[["ABCランク", "売上金額"]].to_dict("index") \
+    abc_map = abc_df_raw.drop_duplicates(subset=[col_key]).set_index(col_key)[["ABCランク", "売上金額"]].to_dict("index") \
         if "ABCランク" in abc_df_raw.columns else {}
     df_d["ABCランク"] = df_d[col_key].map(lambda k: abc_map.get(k, {}).get("ABCランク", "C"))
 

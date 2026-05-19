@@ -319,6 +319,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     const itemPrice = totalItems > 0 ? Math.round(storeInfo.sales / totalItems) : 0;
     document.getElementById("val-item-price").innerHTML = `${itemPrice.toLocaleString()}<span class="unit">円</span>`;
     document.getElementById("val-items-per-customer").innerHTML = `${storeInfo.items_per_customer}<span class="unit">個</span>`;
+    
+    // Kanken 在庫ステータスの更新
+    const kankenGrid = document.querySelector(".kanken-grid");
+    if (kankenGrid && storeInfo.kanken_status) {
+      kankenGrid.innerHTML = ""; // モックをクリア
+      
+      // 在庫の多い順にソート（任意）
+      const sortedKanken = [...storeInfo.kanken_status].sort((a, b) => b.stock_num - a.stock_num);
+      
+      sortedKanken.forEach(item => {
+        const isStockout = item.stock_num <= 0;
+        const chipClass = isStockout ? "kanken-chip stockout" : "kanken-chip ok";
+        const stockLabel = isStockout ? "欠品" : "在庫";
+        const warningIcon = isStockout ? `<div class="warning-icon">⚠</div>` : "";
+        
+        const html = `
+          <div class="${chipClass}">
+            <div class="color-name">${item.color_name}</div>
+            <div class="stock-num">${item.stock_num}</div>
+            <div class="stock-label">${stockLabel}</div>
+            ${warningIcon}
+          </div>
+        `;
+        kankenGrid.insertAdjacentHTML("beforeend", html);
+      });
+      
+      if (sortedKanken.length === 0) {
+        kankenGrid.innerHTML = `<div style="font-size: 12px; color: var(--color-text-muted); grid-column: 1 / -1;">データがありません</div>`;
+      }
+    }
   }
 });
 </script>

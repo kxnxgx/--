@@ -148,7 +148,7 @@ def main():
 
             # --- Step 7: ダッシュボード用JSON出力 (V4) ---
             log_step_start(f"JSON出力 ({brand})")
-            generate_dashboard_json(brand, df_merged, abc_df_raw, kpi, opp_loss_df, cols)
+            generate_dashboard_json(brand, df_merged, df_stock, abc_df_raw, kpi, opp_loss_df, cols)
             log_step_end(f"JSON出力 ({brand})")
 
             log(f"ブランド【 {brand} 】の処理完了: {os.path.basename(output_path)}")

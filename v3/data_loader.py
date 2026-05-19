@@ -83,18 +83,20 @@ def load_and_merge_data():
                        .str.replace("¥", "").str.replace(",", "").str.strip())
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
-    # 在庫数カラム特定
+    # 在庫数カラム特定 (キーワード優先順)
     stock_val_col = ic[-1]
-    for c in ic:
-        if any(x in c for x in cm["stock_val_keywords"]):
-            stock_val_col = c
+    for kw in cm["stock_val_keywords"]:
+        found = next((c for c in ic if kw in c), None)
+        if found:
+            stock_val_col = found
             break
 
-    # 受入数量カラム（消化率用）
+    # 受入数量カラム（消化率用） (キーワード優先順)
     stock_recv_col = None
-    for c in ic:
-        if any(x in c for x in cm["stock_recv_keywords"]):
-            stock_recv_col = c
+    for kw in cm["stock_recv_keywords"]:
+        found = next((c for c in ic if kw in c), None)
+        if found:
+            stock_recv_col = found
             break
 
     # 売上 + マスタ 結合

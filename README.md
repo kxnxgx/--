@@ -20,8 +20,14 @@
    処理が完了すると、`v3` フォルダ内に **`MD分析レポートv3_YYYYMMDD.xlsx`** が生成されます。
 
 4. **AI（Gemini）を活用した深掘り分析**
-   生成されたレポートをGeminiに読み込ませることで、さらに高度な示唆を得られます。
+   生成されたレポートをGeminiに読み込ませることで、さらに高度な示唆を得られます.
    詳細は [**GEMINI.md**](file:///c:/%E5%88%86%E6%9E%90/v3/GEMINI.md)（指示出しのコツ）および [**SKILLS.md**](file:///c:/%E5%88%86%E6%9E%90/v3/SKILLS.md)（分析ロジック）を参照してください。
+
+5. **店舗KPIダッシュボード（HTML版）での可視化 (V4)**
+   自動生成されたJSONデータを利用して、ブラウザで店舗ごとのKPIや在庫状況を視覚的にプレビューできます。
+   * **APIサーバーの起動**: コマンドプロンプト等で `python v3/server.py` を実行します。
+   * **ダッシュボードの閲覧**: `frontend_mock/store_kpi_dashboard.html` をブラウザで開きます。
+   * 詳細は [**frontend_mock/README.md**](file:///c:/%E5%88%86%E6%9E%90/frontend_mock/README.md) を参照してください。
 
 ---
 
@@ -88,10 +94,12 @@
 
 ---
 
-## ⚙️ システム構成と拡張性 (V3アーキテクチャ)
+## ⚙️ システム構成と拡張性 (V4アーキテクチャ)
 
 * **プログラム本体**: `v3\main.py` および各種モジュール (`data_loader.py`, `analyzer.py`, `db_manager.py`, `excel_writer.py`)
-* **設定ファイル**: `v3\config.json`（カラム指定や閾値の変更が可能）
+* **ダッシュボード配信サービス**: `v3\server.py` (CORS対応軽量APIサーバー)
+* **フロントエンドモック**: `frontend_mock\store_kpi_dashboard.html`
+* **設定ファイル**: `v3\config.json`（カラム指定、閉鎖店舗除外、優先キーワード等の変更が可能）
 * **データベース**: `v3\fjallraven_md_v3.db` (SQLite)
   * 日々の売上・在庫のスナップショットが蓄積される設計。
   * 実行前に自動で `v3\backup` フォルダにバックアップを作成します（デフォルト7日間保持）。

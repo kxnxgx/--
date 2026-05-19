@@ -37,7 +37,7 @@
             "key_idx": 2
         },
         "date_keywords": ["日", "日付", "年月日", "Date"],
-        "stock_val_keywords": ["在庫", "数量", "残数", "現在"],
+        "stock_val_keywords": ["現在数量", "フリー数", "残数", "現在", "在庫", "数量"],
         "stock_recv_keywords": ["受入", "入荷", "仕入"],
         "inbound_keywords": ["外国", "インバウンド", "INBOUND"]
     },
