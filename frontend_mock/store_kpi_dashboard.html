@@ -289,6 +289,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!res.ok) throw new Error("API Fetch Error");
     dashboardData = await res.json();
     
+    // 期間表示の動的更新
+    if (dashboardData.period) {
+      const periodEl = document.querySelector(".header .period");
+      if (periodEl) periodEl.textContent = dashboardData.period;
+    }
+    
     const stores = Object.keys(dashboardData.stores || {});
     if (stores.length > 0) {
       storeSelect.innerHTML = stores.map(s => `<option value="${s}">${s}</option>`).join("");

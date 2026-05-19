@@ -19,6 +19,20 @@ def generate_dashboard_json(brand, df_merged, df_stock, abc_df, kpi_dict, opport
     col_color = cols.get("m_color")
     col_stk = cols.get("stock_val")
     
+    # 直近1週間（最新の売上日から遡って7日間）のフィルタリングと期間文字列生成
+    col_date = cols.get("date")
+    period_str = "期間データなし"
+    df_latest_1w = df_merged
+    
+    if col_date and col_date in df_merged.columns:
+        valid_dates = df_merged[col_date].dropna()
+        if not valid_dates.empty:
+            max_date = valid_dates.max()
+            start_date = max_date - pd.Timedelta(days=6)
+            # 最新の7日間に絞り込み
+            df_latest_1w = df_merged[(df_merged[col_date] >= start_date) & (df_merged[col_date] <= max_date)]
+            period_str = f"📅 {start_date.strftime('%Y/%m/%d')} 〜 {max_date.strftime('%Y/%m/%d')}"
+
     # 1. MD本部用データの構築
     md_dashboard = {
         "summary": {
@@ -41,11 +55,12 @@ def generate_dashboard_json(brand, df_merged, df_stock, abc_df, kpi_dict, opport
             if "POP-UP" in store_str or any(c in store_str for c in closed_stores):
                 continue
                 
-            df_store = df_merged[df_merged[col_store] == store]
+            # 直近1週間の売上データから店舗別データを切り出し
+            df_store = df_latest_1w[df_latest_1w[col_store] == store]
             if len(df_store) == 0:
                 continue
                 
-            # 店舗ごとの簡易集計 (実運用では店舗別KPI計算などを呼び出す)
+            # 店舗ごとの簡易集計 (直近1週間の実績に基づく)
             total_sales = len(df_store)
             total_rev = int(df_store[cols["s_price"]].sum()) if cols["s_price"] else 0
             unique_tx = df_store[cols["s_reg"]].nunique() if cols["s_reg"] else 1
@@ -95,11 +110,12 @@ def generate_dashboard_json(brand, df_merged, df_stock, abc_df, kpi_dict, opport
                 "store_name": store,
                 "store_kpi_dashboard": store_kpi
             }
-            
+
     # 全体をまとめる
     dashboard_data = {
         "generated_at": datetime.now().isoformat(),
         "brand": brand,
+        "period": period_str,
         "md_dashboard": md_dashboard,
         "stores": stores_data
     }
